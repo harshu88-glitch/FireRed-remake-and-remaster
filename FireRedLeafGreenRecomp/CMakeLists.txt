@@ -144,7 +144,20 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
         src)
 
     if(ANDROID)
+        target_sources(${BIN_TARGET} PRIVATE
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/imgui.cpp"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/imgui_draw.cpp"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/imgui_tables.cpp"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/imgui_widgets.cpp"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/backends/imgui_impl_sdl2.cpp"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/backends/imgui_impl_sdlrenderer2.cpp"
+            "${RECOMP_UI_ROOT}/src/common/backends/imgui/runtime_ui_imgui.cpp"
+        )
         target_include_directories(${BIN_TARGET} PRIVATE
+            "${RECOMP_UI_ROOT}/src"
+            "${RECOMP_UI_ROOT}/src/common"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui"
+            "${RECOMP_UI_ROOT}/src/third_party/imgui/backends"
             "${GBARECOMP_ROOT}/platform/android/third_party/SDL/include")
         if(TARGET SDL2::SDL2)
             target_link_libraries(${BIN_TARGET} PRIVATE SDL2::SDL2)
