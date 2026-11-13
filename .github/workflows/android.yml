@@ -41,15 +41,25 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Ensure Android SDL Submodule Initialized
+      - name: Ensure gbarecomp Submodules Initialized
         run: |
           cd FireRedLeafGreenRecomp/gbarecomp
+          mkdir -p external platform/android/third_party
+          if [ ! -f "external/arm-recomp-core/cmake/ArmRecompCore.cmake" ]; then
+            echo "Fetching arm-recomp-core..."
+            rm -rf external/arm-recomp-core
+            git clone --depth 1 https://github.com/RetroPortingToolKit/arm-recomp-core.git external/arm-recomp-core
+          fi
           if [ ! -d "platform/android/third_party/SDL/src" ]; then
-            echo "Initializing SDL Android submodule..."
-            git submodule update --init --recursive platform/android/third_party/SDL || {
-              mkdir -p platform/android/third_party
-              git clone --depth 1 https://github.com/mstan/SDL.git platform/android/third_party/SDL
-            }
+            echo "Fetching SDL Android submodule..."
+            rm -rf platform/android/third_party/SDL
+            git clone --depth 1 https://github.com/mstan/SDL.git platform/android/third_party/SDL
+          fi
+          if [ ! -d "external/recomp-net/include" ]; then
+            git clone --depth 1 https://github.com/RetroPortingToolKit/recomp-net.git external/recomp-net || true
+          fi
+          if [ ! -d "external/rbengine/include" ]; then
+            git clone --depth 1 https://github.com/RetroPortingToolKit/rbengine.git external/rbengine || true
           fi
 
       - name: Set up Java 17
