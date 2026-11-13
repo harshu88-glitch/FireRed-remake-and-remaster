@@ -152,6 +152,11 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
             "${RECOMP_UI_ROOT}/src/third_party/imgui/backends/imgui_impl_sdl2.cpp"
             "${RECOMP_UI_ROOT}/src/third_party/imgui/backends/imgui_impl_sdlrenderer2.cpp"
             "${RECOMP_UI_ROOT}/src/common/backends/imgui/runtime_ui_imgui.cpp"
+            "${RECOMP_UI_ROOT}/src/common/recomp_runtime_ui.c"
+            "${RECOMP_UI_ROOT}/src/common/recomp_runtime_settings.c"
+            "${RECOMP_UI_ROOT}/src/common/recomp_frame_blend.c"
+            "${RECOMP_UI_ROOT}/src/common/recomp_moderation.c"
+            "${RECOMP_UI_ROOT}/src/common/recomp_flash_guard.c"
         )
         target_include_directories(${BIN_TARGET} PRIVATE
             "${RECOMP_UI_ROOT}/src"
