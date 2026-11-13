@@ -5,6 +5,10 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(TARGET SDL2 AND NOT TARGET SDL2::SDL2)
+    add_library(SDL2::SDL2 ALIAS SDL2)
+endif()
+
 # ─────────────────────────────────────────────────────────────────────
 # FRLG multi-variant recomp.
 #
