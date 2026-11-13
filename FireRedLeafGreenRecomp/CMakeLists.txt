@@ -139,6 +139,12 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
         "${GBARECOMP_ROOT}/src/debug"
         src)
 
+    if(ANDROID)
+        target_include_directories(${BIN_TARGET} PRIVATE
+            "${GBARECOMP_ROOT}/platform/android/third_party/SDL/include")
+        target_link_libraries(${BIN_TARGET} PRIVATE SDL2::SDL2)
+    endif()
+
     target_link_libraries(${BIN_TARGET} PRIVATE
         # --start-group lets ld re-iterate the gbarecomp static libs to
         # resolve their mutual references.
