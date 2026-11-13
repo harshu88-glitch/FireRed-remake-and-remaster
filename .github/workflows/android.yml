@@ -48,7 +48,7 @@ jobs:
           if [ ! -f "external/arm-recomp-core/cmake/ArmRecompCore.cmake" ]; then
             echo "Fetching arm-recomp-core..."
             rm -rf external/arm-recomp-core
-            git clone --depth 1 https://github.com/RetroPortingToolKit/arm-recomp-core.git external/arm-recomp-core
+            git clone --depth 1 https://github.com/mstan/arm-recomp-core.git external/arm-recomp-core
           fi
           if [ ! -d "platform/android/third_party/SDL/src" ]; then
             echo "Fetching SDL Android submodule..."
