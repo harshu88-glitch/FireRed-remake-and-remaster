@@ -181,6 +181,22 @@ void runtime_dispatch(uint32_t target_pc);
 void runtime_dispatch_with_exchange(uint32_t target_pc);
 void runtime_dispatch_miss(uint32_t target_pc);
 
+#ifndef GBARECOMP_TAIL_CALL
+#define GBARECOMP_TAIL_CALL(fn) do { fn(); return; } while (0)
+#endif
+
+#ifndef GBARECOMP_TAIL_DISPATCH
+#define GBARECOMP_TAIL_DISPATCH(target) do { runtime_dispatch(target); return; } while (0)
+#endif
+
+#ifndef GBARECOMP_TAIL_DISPATCH_WITH_EXCHANGE
+#define GBARECOMP_TAIL_DISPATCH_WITH_EXCHANGE(target) do { runtime_dispatch_with_exchange(target); return; } while (0)
+#endif
+
+#ifndef GBARECOMP_TAIL_SWI
+#define GBARECOMP_TAIL_SWI(imm) do { runtime_swi(imm); return; } while (0)
+#endif
+
 // Whole-program force-interpreter backend (co-simulation "interp" side). When
 // g_force_interp != 0, the main run loop calls runtime_force_interp_step() once
 // per guest instruction instead of dispatching generated code — interpreting the
