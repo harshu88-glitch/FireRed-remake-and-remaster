@@ -1,0 +1,127 @@
+name: Build FireRed Remaster Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'FireRedLeafGreenRecomp/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type (Debug or Release)'
+        required: true
+        default: 'Debug'
+        type: choice
+        options:
+          - Debug
+          - Release
+      abis:
+        description: 'Target ABIs'
+        required: true
+        default: 'arm64-v8a'
+        type: string
+      embed_rom:
+        description: 'Embed ROM from repository secret (FIRE_RED_ROM_BASE64) if available'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-apk:
+    name: Build Android APK (${{ inputs.build_type || 'Debug' }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository with Submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Ensure Android SDL Submodule Initialized
+        run: |
+          cd FireRedLeafGreenRecomp/gbarecomp
+          if [ ! -d "platform/android/third_party/SDL/src" ]; then
+            echo "Initializing SDL Android submodule..."
+            git submodule update --init --recursive platform/android/third_party/SDL || {
+              mkdir -p platform/android/third_party
+              git clone --depth 1 https://github.com/mstan/SDL.git platform/android/third_party/SDL
+            }
+          fi
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK & CMake
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager --install "ndk;27.1.12297006" "cmake;3.22.1"
+
+      - name: Stage ROM (if secret provided)
+        id: stage_rom
+        run: |
+          if [ "${{ inputs.embed_rom }}" = "true" ] && [ -n "${{ secrets.FIRE_RED_ROM_BASE64 }}" ]; then
+            echo "Staging private ROM from repository secret..."
+            echo "${{ secrets.FIRE_RED_ROM_BASE64 }}" | base64 -d > "${RUNNER_TEMP}/firered_usa.gba"
+            echo "rom_param=-PprivateRom=${RUNNER_TEMP}/firered_usa.gba" >> $GITHUB_OUTPUT
+          else
+            echo "Building standard APK (bring your own ROM on device)..."
+            echo "rom_param=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Android APK with Gradle
+        working-directory: FireRedLeafGreenRecomp/android
+        run: |
+          chmod +x gradlew
+          BUILD_TASK="assemble${{ inputs.build_type || 'Debug' }}"
+          ABIS="${{ inputs.abis || 'arm64-v8a' }}"
+          ROM_ARG="${{ steps.stage_rom.outputs.rom_param }}"
+          
+          echo "Executing: ./gradlew $BUILD_TASK -PgbaAbis=$ABIS $ROM_ARG --stacktrace"
+          ./gradlew $BUILD_TASK -PgbaAbis="$ABIS" $ROM_ARG --stacktrace
+
+      - name: Locate Output APK
+        id: locate_apk
+        run: |
+          APK_PATH=$(find FireRedLeafGreenRecomp/android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "Error: No APK file generated!"
+            exit 1
+          fi
+          echo "Found APK at: $APK_PATH"
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_name=$(basename $APK_PATH)" >> $GITHUB_OUTPUT
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pokemon-FireRed-Remaster-${{ inputs.build_type || 'Debug' }}-APK
+          path: ${{ steps.locate_apk.outputs.apk_path }}
+          retention-days: 14
+
+      - name: Create Release with APK (on tag or manual trigger)
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'Release')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.locate_apk.outputs.apk_path }}
+          name: "Pokémon FireRed Remaster ${{ github.ref_name }}"
+          body: |
+            ## Pokémon FireRed Remaster — Native Android Build
+            
+            - **Platform**: Android (`arm64-v8a`)
+            - **Features**: Native 16:9 widescreen, HD UI toggle, on-screen touch controls, vibration/gyroscope support.
+            - **ROM Requirement**: Place your legally dumped `Pokemon FireRed (USA).gba` on your phone or in the app's prompt.
+          draft: false
+          prerelease: false

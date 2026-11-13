@@ -71,23 +71,47 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
         "${VARIANT_DIR}/generated/*.c"
         "${VARIANT_DIR}/generated/*.cpp")
 
-    add_executable(${TARGET}
-        src/main.cpp
-        src/fr_settings_menu.cpp
-        src/fr_widescreen.cpp
-        src/fr_pc_input.cpp
-        src/fr_hd_text.cpp
-        src/fr_hd_capture.cpp
-        src/fr_hd_draw.cpp
-        src/fr_hd_fonts.cpp
-        src/fr_hd_ui.cpp
-        src/fr_hd_battle.cpp
-        src/fr_hd_screens.cpp
-        src/fr_hd_screens2.cpp
-        src/fr_hd_map.cpp
-        src/fr_hd_naming.cpp
-        src/fr_diorama.cpp
-        ${VARIANT_GENERATED})
+    if(ANDROID)
+        add_library(${TARGET} SHARED
+            src/main.cpp
+            src/fr_settings_menu.cpp
+            src/fr_widescreen.cpp
+            src/fr_pc_input.cpp
+            src/fr_hd_text.cpp
+            src/fr_hd_capture.cpp
+            src/fr_hd_draw.cpp
+            src/fr_hd_fonts.cpp
+            src/fr_hd_ui.cpp
+            src/fr_hd_battle.cpp
+            src/fr_hd_screens.cpp
+            src/fr_hd_screens2.cpp
+            src/fr_hd_map.cpp
+            src/fr_hd_naming.cpp
+            src/fr_diorama.cpp
+            ${VARIANT_GENERATED})
+        if(NOT TARGET main)
+            add_library(main ALIAS ${TARGET})
+        endif()
+        target_link_libraries(${TARGET} PRIVATE log android EGL GLESv2)
+    else()
+        add_executable(${TARGET}
+            src/main.cpp
+            src/fr_settings_menu.cpp
+            src/fr_widescreen.cpp
+            src/fr_pc_input.cpp
+            src/fr_hd_text.cpp
+            src/fr_hd_capture.cpp
+            src/fr_hd_draw.cpp
+            src/fr_hd_fonts.cpp
+            src/fr_hd_ui.cpp
+            src/fr_hd_battle.cpp
+            src/fr_hd_screens.cpp
+            src/fr_hd_screens2.cpp
+            src/fr_hd_map.cpp
+            src/fr_hd_naming.cpp
+            src/fr_diorama.cpp
+            ${VARIANT_GENERATED})
+    endif()
 
     # Keep the very large generated guest translation units at a bounded
     # optimization/debug-info cost. gba_recompile emits deterministic
@@ -167,6 +191,9 @@ endfunction()
 # GBAGAME_RECOMP_UI) and launcher_boot.cpp know the launcher exists.
 # ─────────────────────────────────────────────────────────────────────
 option(GBAGAME_RECOMP_UI "Build the recomp-ui pre-boot launcher" ON)
+if(ANDROID)
+    set(GBAGAME_RECOMP_UI OFF)
+endif()
 if(GBAGAME_RECOMP_UI)
     include(${CMAKE_CURRENT_SOURCE_DIR}/recomp-ui/recomp_ui.cmake)
     add_library(game_launcher_ui STATIC src/game_launcher_boot.cpp)
