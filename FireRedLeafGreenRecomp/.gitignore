@@ -149,6 +149,8 @@ variants/*/generated/*.c
 variants/*/generated/*.cpp
 variants/*/generated/*.h
 variants/*/generated/*.json
+!variants/firered/generated/*.cpp
+!variants/firered/generated/*.h
 variants/*/symbols/*_readelf.txt
 variants/*/symbols/*_sections.txt
 variants/*/symbols/*_typed.txt
