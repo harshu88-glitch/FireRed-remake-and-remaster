@@ -23,6 +23,9 @@
 #include <vector>
 
 #include "runtime.h"
+#if defined(__ANDROID__)
+#include <SDL.h>
+#endif
 #include "fr_settings_menu.h"
 #include "fr_pc_input.h"
 #include "fr_hd_ui.h"

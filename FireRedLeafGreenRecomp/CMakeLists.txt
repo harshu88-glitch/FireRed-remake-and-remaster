@@ -50,7 +50,9 @@ add_subdirectory("${GBARECOMP_ROOT}" gbarecomp_build EXCLUDE_FROM_ALL)
 # verify_rom_hash — refuses to launch a game with an unknown ROM. Shared
 # across variants (it takes the ROM path + expected sha1 as arguments).
 # ─────────────────────────────────────────────────────────────────────
-add_executable(verify_rom_hash tools/verify_rom_hash/main.cpp)
+if(NOT ANDROID)
+    add_executable(verify_rom_hash tools/verify_rom_hash/main.cpp)
+endif()
 
 # ─────────────────────────────────────────────────────────────────────
 # add_gba_variant(<target> <name> <port> <win_title> <game_name> <sha1>
@@ -61,6 +63,12 @@ add_executable(verify_rom_hash tools/verify_rom_hash/main.cpp)
 #   wiring. game.toml is selected at runtime via the compile-def below.
 # ─────────────────────────────────────────────────────────────────────
 function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32)
+    if(ANDROID)
+        set(BIN_TARGET "main")
+    else()
+        set(BIN_TARGET "${TARGET}")
+    endif()
+
     set(VARIANT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/variants/${NAME}")
     if(EXISTS "${VARIANT_DIR}/generated/recompiled.cpp")
         message(FATAL_ERROR
@@ -72,7 +80,7 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
         "${VARIANT_DIR}/generated/*.cpp")
 
     if(ANDROID)
-        add_library(${TARGET} SHARED
+        add_library(${BIN_TARGET} SHARED
             src/main.cpp
             src/fr_settings_menu.cpp
             src/fr_widescreen.cpp
@@ -89,12 +97,9 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
             src/fr_hd_naming.cpp
             src/fr_diorama.cpp
             ${VARIANT_GENERATED})
-        if(NOT TARGET main)
-            add_library(main ALIAS ${TARGET})
-        endif()
-        target_link_libraries(${TARGET} PRIVATE log android EGL GLESv2)
+        target_link_libraries(${BIN_TARGET} PRIVATE log android EGL GLESv2)
     else()
-        add_executable(${TARGET}
+        add_executable(${BIN_TARGET}
             src/main.cpp
             src/fr_settings_menu.cpp
             src/fr_widescreen.cpp
@@ -127,14 +132,14 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
             COMPILE_OPTIONS "-O1;-g0")
     endif()
 
-    target_include_directories(${TARGET} PRIVATE
+    target_include_directories(${BIN_TARGET} PRIVATE
         "${GBARECOMP_ROOT}/src/armv4t"
         "${GBARECOMP_ROOT}/src/gba"
         "${GBARECOMP_ROOT}/src/runtime"
         "${GBARECOMP_ROOT}/src/debug"
         src)
 
-    target_link_libraries(${TARGET} PRIVATE
+    target_link_libraries(${BIN_TARGET} PRIVATE
         # --start-group lets ld re-iterate the gbarecomp static libs to
         # resolve their mutual references.
         "-Wl,--start-group"
@@ -144,7 +149,7 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
         gbarecomp_armv4t
         "-Wl,--end-group")
 
-    target_compile_definitions(${TARGET} PRIVATE
+    target_compile_definitions(${BIN_TARGET} PRIVATE
         GBARECOMP_DEFAULT_DEBUG_PORT=${PORT}
         GBARECOMP_WINDOW_TITLE="${WIN_TITLE}"
         GBARECOMP_DEFAULT_GAME_CONFIG="variants/${NAME}/game.toml"
@@ -154,19 +159,19 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
         GBARECOMP_BUILTIN_REGION="USA")
 
     if(GBAGAME_RECOMP_UI)
-        target_link_libraries(${TARGET} PRIVATE game_launcher_ui)
+        target_link_libraries(${BIN_TARGET} PRIVATE game_launcher_ui)
         # Per-variant box art: variants share one build dir, so each stages
         # its own file and points its exe at it (RunOptions.launcher_boxart).
         set(VARIANT_BOXART "${VARIANT_DIR}/launcher/boxart.tga")
         if(EXISTS "${VARIANT_BOXART}")
-            add_custom_command(TARGET ${TARGET} POST_BUILD
+            add_custom_command(TARGET ${BIN_TARGET} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory
-                    $<TARGET_FILE_DIR:${TARGET}>/assets/img
+                    $<TARGET_FILE_DIR:${BIN_TARGET}>/assets/img
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${VARIANT_BOXART}"
-                    $<TARGET_FILE_DIR:${TARGET}>/assets/img/boxart_${NAME}.tga
+                    $<TARGET_FILE_DIR:${BIN_TARGET}>/assets/img/boxart_${NAME}.tga
                 VERBATIM)
-            target_compile_definitions(${TARGET} PRIVATE
+            target_compile_definitions(${BIN_TARGET} PRIVATE
                 GBARECOMP_BOXART="assets/img/boxart_${NAME}.tga")
         endif()
     endif()
@@ -177,9 +182,9 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
     # 90k overflowed it before main). Also gives headroom for deep
     # recompiled call chains (guest depth -> host C frames).
     if(MSVC)
-        target_link_options(${TARGET} PRIVATE /STACK:268435456)
+        target_link_options(${BIN_TARGET} PRIVATE /STACK:268435456)
     elseif(MINGW OR WIN32)
-        target_link_options(${TARGET} PRIVATE -Wl,--stack,268435456)
+        target_link_options(${BIN_TARGET} PRIVATE -Wl,--stack,268435456)
     endif()
 endfunction()
 
@@ -218,13 +223,15 @@ add_gba_variant(FireRedRecomp   firered   19852 "FireRedRecomp"
 # FireRed ships as "FireRed Remaster": its own exe name, window title
 # (src/main.cpp) and Ben's chosen icon (res/firered_remaster.ico; the old
 # generated flame is kept as res/firered_remaster_flame.ico).
-set_target_properties(FireRedRecomp PROPERTIES OUTPUT_NAME "FireRed Remaster")
-if(WIN32)
-    enable_language(RC)
-    target_sources(FireRedRecomp PRIVATE res/firered_remaster.rc)
-endif()
+if(NOT ANDROID)
+    set_target_properties(FireRedRecomp PROPERTIES OUTPUT_NAME "FireRed Remaster")
+    if(WIN32)
+        enable_language(RC)
+        target_sources(FireRedRecomp PRIVATE res/firered_remaster.rc)
+    endif()
 
-# LeafGreen — rev0 / v1.0, sha1 574fa542… (definitive build, matches FireRed
-# v1.0; rev1 7862c67b work archived in ../../../_gen3_leafgreen_rev1_archive/).
-add_gba_variant(LeafGreenRecomp leafgreen 19862 "LeafGreenRecomp"
-    "Pokemon LeafGreen (USA)" "574fa542ffebb14be69902d1d36f1ec0a4afd71e" 0xD69C96CC)
+    # LeafGreen — rev0 / v1.0, sha1 574fa542… (definitive build, matches FireRed
+    # v1.0; rev1 7862c67b work archived in ../../../_gen3_leafgreen_rev1_archive/).
+    add_gba_variant(LeafGreenRecomp leafgreen 19862 "LeafGreenRecomp"
+        "Pokemon LeafGreen (USA)" "574fa542ffebb14be69902d1d36f1ec0a4afd71e" 0xD69C96CC)
+endif()

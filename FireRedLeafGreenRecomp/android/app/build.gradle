@@ -10,10 +10,10 @@ ext.gbaGame = [
     romSha1: "41cb23d8dccc8ebd7c649cd8fbb58eeace6e2fdc",
     romSize: 16777216,
     romFile: "firered_usa.gba",
-    variant: "variants/firered",
-    gameToml: file("../variants/firered/game.toml"),
-    gameRoot: file(".."),
-    engineRoot: file("../gbarecomp"),
+    variant: "firered",
+    gameToml: file("../../variants/firered/game.toml"),
+    gameRoot: file("../.."),
+    engineRoot: file("../../gbarecomp"),
     orientation: "landscape",
     gyro: false,
     biosRequired: false,
@@ -21,4 +21,4 @@ ext.gbaGame = [
     debugAbis: ["arm64-v8a", "x86_64"]
 ]
 
-apply from: file("../gbarecomp/platform/android/gbarecomp-app.gradle")
+apply from: file("../../gbarecomp/platform/android/gbarecomp-app.gradle")
