@@ -50,10 +50,10 @@ jobs:
             rm -rf external/arm-recomp-core
             git clone --depth 1 https://github.com/mstan/arm-recomp-core.git external/arm-recomp-core
           fi
-          if [ ! -d "platform/android/third_party/SDL/src" ]; then
-            echo "Fetching SDL Android submodule..."
+          if [ ! -d "platform/android/third_party/SDL/src" ] || [ -f "platform/android/third_party/SDL/include/SDL3/SDL.h" ]; then
+            echo "Fetching official SDL2 repository (branch SDL2)..."
             rm -rf platform/android/third_party/SDL
-            git clone --depth 1 https://github.com/mstan/SDL.git platform/android/third_party/SDL
+            git clone --depth 1 -b SDL2 https://github.com/libsdl-org/SDL.git platform/android/third_party/SDL
           fi
           if [ ! -d "external/recomp-net/include" ]; then
             git clone --depth 1 https://github.com/RetroPortingToolKit/recomp-net.git external/recomp-net || true

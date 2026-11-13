@@ -146,7 +146,11 @@ function(add_gba_variant TARGET NAME PORT WIN_TITLE GAME_NAME ROM_SHA1 ROM_CRC32
     if(ANDROID)
         target_include_directories(${BIN_TARGET} PRIVATE
             "${GBARECOMP_ROOT}/platform/android/third_party/SDL/include")
-        target_link_libraries(${BIN_TARGET} PRIVATE SDL2::SDL2)
+        if(TARGET SDL2::SDL2)
+            target_link_libraries(${BIN_TARGET} PRIVATE SDL2::SDL2)
+        elseif(TARGET SDL2)
+            target_link_libraries(${BIN_TARGET} PRIVATE SDL2)
+        endif()
     endif()
 
     target_link_libraries(${BIN_TARGET} PRIVATE
